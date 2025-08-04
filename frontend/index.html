@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Arbitrage App v6</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Arbitrage Trading App</h1>
+    <!-- Registration section -->
+    <section id="registerSection">
+      <h2>Register</h2>
+      <input id="regUsername" placeholder="Username" />
+      <input id="regPassword" type="password" placeholder="Password" />
+      <button id="registerBtn">Register</button>
+      <p id="registerMsg" class="message"></p>
+    </section>
+    <!-- Login section -->
+    <section id="loginSection">
+      <h2>Login</h2>
+      <input id="loginUsername" placeholder="Username" />
+      <input id="loginPassword" type="password" placeholder="Password" />
+      <button id="loginBtn">Login</button>
+      <p id="loginMsg" class="message"></p>
+    </section>
+    <!-- Market section (after login) -->
+    <section id="exchangeSection" class="hidden">
+      <h2>Market</h2>
+      <label>Exchange:
+        <select id="exchangeSelect"></select>
+      </label>
+      <label>Symbol:
+        <select id="symbolSelect"></select>
+      </label>
+      <button id="getPriceBtn">Get Price</button>
+      <p id="priceDisplay"></p>
+    </section>
+    <!-- Wallet section -->
+    <section id="walletSection" class="hidden">
+      <h2>Wallet</h2>
+      <p>Balance: <span id="balanceDisplay"></span></p>
+      <input id="depositAmount" type="number" placeholder="Deposit amount" />
+      <button id="depositBtn">Deposit</button>
+    </section>
+    <!-- Trade section -->
+    <section id="tradeSection" class="hidden">
+      <h2>Trade</h2>
+      <select id="sideSelect">
+        <option value="buy">Buy</option>
+        <option value="sell">Sell</option>
+      </select>
+      <input id="tradeAmount" type="number" placeholder="Amount" />
+      <button id="tradeBtn">Execute Trade</button>
+    </section>
+    <!-- Logs section -->
+    <section id="logsSection" class="hidden">
+      <h2>Logs</h2>
+      <pre id="logsPre"></pre>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
