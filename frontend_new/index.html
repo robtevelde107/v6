@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Arbitrage Trading App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script defer src="app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Arbitrage Trading App</h1>
+        <p id="welcome">Register or login to start trading!</p>
+        <section id="register-section">
+            <h2>Register</h2>
+            <input type="text" id="register-username" placeholder="Username" />
+            <input type="password" id="register-password" placeholder="Password" />
+            <button id="register-button">Register</button>
+            <div id="register-message" class="message"></div>
+        </section>
+        <section id="login-section">
+            <h2>Login</h2>
+            <input type="text" id="login-username" placeholder="Username" />
+            <input type="password" id="login-password" placeholder="Password" />
+            <label for="env-select">Environment:</label>
+            <select id="env-select">
+                <option value="sandbox">Sandbox</option>
+                <option value="live">Live</option>
+            </select>
+            <button id="login-button">Login</button>
+            <div id="login-message" class="message"></div>
+        </section>
+        <section id="account-section" class="hidden">
+            <h2>Account</h2>
+            <p>Current environment: <span id="current-environment"></span></p>
+            <p>Balance: <span id="balance">0</span></p>
+            <div id="account-message" class="message"></div>
+        </section>
+        <section id="market-section" class="hidden">
+            <h2>Select Market</h2>
+            <label for="exchange-select">Exchange:</label>
+            <select id="exchange-select"></select>
+            <label for="symbol-select">Symbol:</label>
+            <select id="symbol-select"></select>
+            <button id="get-price-button">Get Price</button>
+            <p>Current price: <span id="current-price">-</span></p>
+        </section>
+        <section id="wallet-section" class="hidden">
+            <h2>Deposit</h2>
+            <input type="number" id="deposit-amount" placeholder="Amount" />
+            <button id="deposit-button">Deposit</button>
+            <div id="deposit-message" class="message"></div>
+        </section>
+        <section id="trade-section" class="hidden">
+            <h2>Trade</h2>
+            <label for="trade-action">Action:</label>
+            <select id="trade-action">
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+            </select>
+            <input type="number" id="trade-amount" placeholder="Amount" />
+            <button id="trade-button">Execute Trade</button>
+            <div id="trade-message" class="message"></div>
+        </section>
+        <section id="logs-section" class="hidden">
+            <h2>Logs</h2>
+            <pre id="logs-content"></pre>
+        </section>
+    </div>
+</body>
+</html>
