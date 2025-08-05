@@ -1,150 +1,173 @@
-const API_BASE = "";
-
+/* ------------------ configuration ------------------ */
+const API_BASE = "/api";          // every fetch will be /api/...
 let currentUser = null;
+let currentEnv  = "sandbox";      // default
 
-async function register() {
-  const username = document.getElementById('regUsername').value.trim();
-  const password = document.getElementById('regPassword').value.trim();
-  const msg = document.getElementById('registerMsg');
-  msg.textContent = '';
+/* ------------------ helper ------------------ */
+function showMessage(id, text, error = false) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.color = error ? "#e74c3c" : "#2ecc71";
+}
+
+/* ------------------ handlers ------------------ */
+async function register(e) {
+  e.preventDefault();
+  const username = document.getElementById("regUsername").value.trim();
+  const password = document.getElementById("regPassword").value.trim();
+  if (!username || !password)
+    return showMessage("registerMsg", "Username & password required", true);
+
   try {
-    const res = await fetch(API_BASE + '/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const r = await fetch(`${API_BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error');
-    msg.textContent = data.message;
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Registration failed");
+    showMessage("registerMsg", data.message);
   } catch (err) {
-    msg.textContent = err.message;
+    showMessage("registerMsg", err.message, true);
   }
 }
 
-async function login() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value.trim();
-  const msg = document.getElementById('loginMsg');
-  msg.textContent = '';
+async function login(e) {
+  e.preventDefault();
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  currentEnv      = document.getElementById("loginEnv").value;
+  if (!username || !password)
+    return showMessage("loginMsg", "Username & password required", true);
+
   try {
-    const res = await fetch(API_BASE + '/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const r = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error');
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Login failed");
+
     currentUser = username;
-    msg.textContent = data.message;
-    showAfterLogin();
-    await fetchExchanges();
+    showMessage("loginMsg", data.message);
+    afterLoginUI();
+    await loadExchanges();
     refreshLogs();
   } catch (err) {
-    msg.textContent = err.message;
+    showMessage("loginMsg", err.message, true);
   }
 }
 
-function showAfterLogin() {
-  document.getElementById('exchangeSection').classList.remove('hidden');
-  document.getElementById('walletSection').classList.remove('hidden');
-  document.getElementById('tradeSection').classList.remove('hidden');
-  document.getElementById('logsSection').classList.remove('hidden');
+function afterLoginUI() {
+  ["accountSection","walletSection","marketSection",
+   "tradeSection","logsSection"].forEach(id =>
+       document.getElementById(id).classList.remove("hidden"));
+  document.getElementById("accountUsername").textContent = currentUser;
 }
 
-async function fetchExchanges() {
-  const res = await fetch(API_BASE + '/exchanges');
-  const data = await res.json();
-  const select = document.getElementById('exchangeSelect');
-  select.innerHTML = '';
-  data.exchanges.forEach(ex => {
-    const opt = document.createElement('option');
-    opt.value = ex;
-    opt.textContent = ex;
-    select.appendChild(opt);
+/* ------------------ wallet ------------------ */
+async function deposit() {
+  const amt = parseFloat(document.getElementById("depositAmount").value);
+  if (!currentUser || isNaN(amt) || amt <= 0)
+    return showMessage("walletMsg", "Enter a valid amount", true);
+
+  try {
+    const r = await fetch(`${API_BASE}/deposit`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ username: currentUser, environment: currentEnv, amount: amt })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "Deposit failed");
+    updateBalance(d.balance);
+    showMessage("walletMsg", d.message);
+  } catch (err) {
+    showMessage("walletMsg", err.message, true);
+  }
+}
+
+function updateBalance(bal) {
+  if (bal !== undefined)
+    document.getElementById("balanceDisplay").textContent = bal.toFixed(2);
+}
+
+/* ------------------ market & price ------------------ */
+async function loadExchanges() {
+  const r  = await fetch(`${API_BASE}/exchanges`);
+  const d  = await r.json();
+  const ex = document.getElementById("exchangeSelect");
+  ex.innerHTML = "";
+  d.exchanges.forEach(x => {
+    const o = document.createElement("option"); o.value=o.textContent=x; ex.appendChild(o);
   });
-  if (data.exchanges.length > 0) {
-    await fetchSymbols(data.exchanges[0]);
-  }
+  if (d.exchanges.length) await loadSymbols(d.exchanges[0]);
 }
 
-async function fetchSymbols(exchange) {
-  const res = await fetch(`${API_BASE}/exchanges/${exchange}/symbols`);
-  const data = await res.json();
-  const select = document.getElementById('symbolSelect');
-  select.innerHTML = '';
-  data.symbols.forEach(sym => {
-    const opt = document.createElement('option');
-    opt.value = sym;
-    opt.textContent = sym;
-    select.appendChild(opt);
+async function loadSymbols(exchange) {
+  const r = await fetch(`${API_BASE}/exchanges/${exchange}/symbols`);
+  const d = await r.json();
+  const sel = document.getElementById("symbolSelect");
+  sel.innerHTML="";
+  d.symbols.forEach(s=>{
+    const o = document.createElement("option"); o.value=o.textContent=s; sel.appendChild(o);
   });
 }
-
-document.addEventListener('change', async (e) => {
-  if (e.target && e.target.id === 'exchangeSelect') {
-    const exchange = e.target.value;
-    await fetchSymbols(exchange);
-  }
-});
 
 async function getPrice() {
-  const exchange = document.getElementById('exchangeSelect').value;
-  const symbol = document.getElementById('symbolSelect').value;
-  const res = await fetch(`${API_BASE}/price/${exchange}/${symbol}`);
-  const data = await res.json();
-  document.getElementById('priceDisplay').textContent = 'Price: ' + data.price;
+  const ex = document.getElementById("exchangeSelect").value;
+  const sy = document.getElementById("symbolSelect").value;
+  if (!ex || !sy) return;
+  const r = await fetch(`${API_BASE}/price/${ex}/${sy}`);
+  const d = await r.json();
+  document.getElementById("priceDisplay").textContent = "Price: " + d.price;
 }
 
-async function deposit() {
-  const amount = parseFloat(document.getElementById('depositAmount').value);
-  if (!currentUser || isNaN(amount)) return;
-  const res = await fetch(API_BASE + '/deposit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: currentUser, amount })
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    alert(data.detail || 'Error');
-  } else {
-    document.getElementById('balanceDisplay').textContent = data.balance;
-  }
-}
-
+/* ------------------ trading ------------------ */
 async function trade() {
-  const side = document.getElementById('sideSelect').value;
-  const amount = parseFloat(document.getElementById('tradeAmount').value);
-  const exchange = document.getElementById('exchangeSelect').value;
-  const symbol = document.getElementById('symbolSelect').value;
-  if (!currentUser || isNaN(amount)) return;
-  const res = await fetch(API_BASE + '/trade', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: currentUser, exchange, symbol, side, amount })
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    alert(data.detail || 'Error');
-  } else {
-    document.getElementById('balanceDisplay').textContent = data.balance;
-    document.getElementById('priceDisplay').textContent = 'Executed price: ' + data.price;
+  const side   = document.getElementById("sideSelect").value;
+  const amt    = parseFloat(document.getElementById("tradeAmount").value);
+  const ex     = document.getElementById("exchangeSelect").value;
+  const sym    = document.getElementById("symbolSelect").value;
+  if (!currentUser || isNaN(amt) || amt<=0 || !ex || !sym)
+    return showMessage("tradeMsg", "Fill all fields", true);
+
+  try {
+    const r = await fetch(`${API_BASE}/trade`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ username:currentUser, environment:currentEnv,
+                            exchange:ex, symbol:sym, trade_type:side, quantity:amt })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "Trade failed");
+    updateBalance(d.balance);
+    document.getElementById("priceDisplay").textContent = "Executed: "+d.price;
+    showMessage("tradeMsg", d.message);
+  } catch (err) {
+    showMessage("tradeMsg", err.message, true);
   }
 }
 
+/* ------------------ logs ------------------ */
 async function refreshLogs() {
-  const res = await fetch(API_BASE + '/logs');
-  const data = await res.json();
-  const pre = document.getElementById('logsPre');
-  pre.textContent = data.logs.join('\n');
+  if (!currentUser) return;
+  const r = await fetch(`${API_BASE}/logs`);
+  const d = await r.json();
+  document.getElementById("logsPre").textContent = d.logs.join("\n");
 }
 
-document.getElementById('registerBtn').addEventListener('click', register);
-document.getElementById('loginBtn').addEventListener('click', login);
-document.getElementById('getPriceBtn').addEventListener('click', getPrice);
-document.getElementById('depositBtn').addEventListener('click', deposit);
-document.getElementById('tradeBtn').addEventListener('click', trade);
+/* ------------------ init ------------------ */
+document.addEventListener("DOMContentLoaded", () => {
+  /*  attach events */
+  document.getElementById("registerBtn").addEventListener("click", register);
+  document.getElementById("loginBtn").addEventListener("click",    login);
+  document.getElementById("depositBtn").addEventListener("click",  deposit);
+  document.getElementById("getPriceBtn").addEventListener("click", getPrice);
+  document.getElementById("tradeBtn").addEventListener("click",    trade);
+  document.getElementById("exchangeSelect")
+           .addEventListener("change", e => loadSymbols(e.target.value));
 
-// Poll logs every 5 seconds
-setInterval(() => {
-  if (currentUser) refreshLogs();
-}, 5000);
+  /* poll logs every 5 s while logged in */
+  setInterval(refreshLogs, 5000);
+});
